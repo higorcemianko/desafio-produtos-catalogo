@@ -1,23 +1,27 @@
 package com.desafio.yank.produtos.services.impl;
 
 import com.desafio.yank.produtos.models.Produto;
+import com.desafio.yank.produtos.models.ProdutoDTO;
 import com.desafio.yank.produtos.services.CrawlerProdutoService;
 
+import com.desafio.yank.produtos.services.ProdutoService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class CrawlerProdutoServiceImpl implements CrawlerProdutoService {
+
+    @Autowired
+    private ProdutoService produtoService;
 
     private static final String CARD_PRODUTO_HOME = "a[class^=\"product-card__Wrapper-sc\"]";
     private static final String INFOS_PRODUTO_HOME = "div[class^=\"product-card__WrapperInfo\"]";
@@ -43,9 +47,31 @@ public class CrawlerProdutoServiceImpl implements CrawlerProdutoService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        produtos.forEach(System.out::println);
+        produtos.forEach(produto -> produtoService.salvar(produto));
         return produtos;
     }
+
+    @Override
+    public Map<Integer, ProdutoDTO> filtrarProdutos(List<Produto> produtos) {
+        Map<Integer, ProdutoDTO> retorno = new HashMap<>();
+        int iMaisBarato = 0, iMaisPopular = 0, iMaiorDesconto = 0;
+        for (int i = 1; i < produtos.size(); i++ ){
+            if (produtos.get(i).getPreco().compareTo(produtos.get(iMaisBarato).getPreco()) < 0){
+                iMaisBarato = i;
+            }
+            if (produtos.get(i).getClassicacao().compareTo(produtos.get(iMaisPopular).getClassicacao()) > 0){
+                iMaisPopular = i;
+            }
+            if (produtos.get(i).getDesconto().compareTo(produtos.get(iMaiorDesconto).getDesconto()) > 0){
+                iMaiorDesconto = i;
+            }
+        }
+        retorno.put(1, new ProdutoDTO(produtos.get(iMaisBarato).getNome(), produtos.get(iMaisBarato).getPreco(), produtos.get(iMaisBarato).getUrl(), produtos.get(iMaisBarato).getClassicacao(), produtos.get(iMaisBarato).getDesconto()));
+        retorno.put(2, new ProdutoDTO(produtos.get(iMaisPopular).getNome(), produtos.get(iMaisPopular).getPreco(), produtos.get(iMaisPopular).getUrl(), produtos.get(iMaisPopular).getClassicacao(), produtos.get(iMaisPopular).getDesconto()));
+        retorno.put(3, new ProdutoDTO(produtos.get(iMaiorDesconto).getNome(), produtos.get(iMaiorDesconto).getPreco(), produtos.get(iMaiorDesconto).getUrl(), produtos.get(iMaiorDesconto).getClassicacao(), produtos.get(iMaiorDesconto).getDesconto()));
+        return retorno;
+    }
+
 
     private void produtosSubLinksGrade(List<Produto> produtos, Document document){
         Elements elementsSubLinksGrade = document.select(CARD_PRODUTO_SUB_LINK);
