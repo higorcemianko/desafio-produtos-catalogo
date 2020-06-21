@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface CrawlerProdutoService {
     List<Produto> buscarProdutos(String url);
+
+    
 }
